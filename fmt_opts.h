@@ -59,7 +59,7 @@ struct formatting_options
    static strmap styles;
    enum halign {align_left, align_right, align_center, align_justify, align_error};
    enum valign {va_normal, va_sub, va_sup};
-   bool chpBold, chpAllCaps, chpItalic, chpUnderline;
+   bool chpBold, chpAllCaps, chpItalic, chpUnderline, chpHidden;
    valign chpVAlign;
    int chpFontSize, chpHighlight, chpVShift;
    color chpFColor, chpBColor;
@@ -70,7 +70,7 @@ struct formatting_options
    bool papInTbl;
    formatting_options()
    {
-      chpBold=chpAllCaps=chpItalic=chpUnderline=false;
+      chpBold=chpAllCaps=chpItalic=chpUnderline=chpHidden=false;
       chpVAlign=va_normal;
       chpFontSize=chpHighlight=chpVShift=0;
       papLeft=papRight=papFirst=papBefore=papAfter=0;
@@ -80,6 +80,7 @@ struct formatting_options
    bool operator==(const formatting_options &opt) // tests only for character options
    {
       return chpBold==opt.chpBold && chpAllCaps == opt.chpAllCaps
+             && chpHidden==opt.chpHidden
              && chpItalic==opt.chpItalic 
              && chpUnderline==opt.chpUnderline && chpVAlign==opt.chpVAlign
              && chpFontSize==opt.chpFontSize
@@ -94,6 +95,7 @@ struct formatting_options
    formatting_options &operator=(const formatting_options &opt)
    {
       chpBold=opt.chpBold; chpAllCaps=opt.chpAllCaps;
+      chpHidden=opt.chpHidden;
       chpItalic=opt.chpItalic;
       chpUnderline=opt.chpUnderline; chpVAlign=opt.chpVAlign;
       chpFontSize=opt.chpFontSize; 

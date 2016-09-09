@@ -144,6 +144,12 @@ std::string formatter::format(const formatting_options &_opt)
       style+=opt.chpUnderline?"underline":"none";
       style+=";";
    }
+   if (opt.chpHidden!=last_opt.chpHidden)
+   {
+      style+="display:";
+      style+=opt.chpHidden?"none":"";
+      style+=";";
+   }
    if (opt.chpVAlign!=formatting_options::va_normal)
       opt.chpFontSize=(int)(0.7*(opt.chpFontSize?opt.chpFontSize:24));
    if (opt.chpFontSize!=last_opt.chpFontSize)

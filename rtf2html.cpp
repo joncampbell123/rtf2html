@@ -413,6 +413,9 @@ int main(int argc, char **argv)
                      kw.parameter()==0?formatting_options::va_normal
                                       :formatting_options::va_sub;
                   break;
+               case rtf_keyword::rkw_v:
+                  cur_options.chpHidden=true;
+                  break;
                case rtf_keyword::rkw_b:
                   cur_options.chpBold=!(kw.parameter()==0);
                   break;

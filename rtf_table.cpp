@@ -6,6 +6,8 @@
 #include <functional>
 #include <algorithm>
 
+#include <stdio.h>
+
 typedef std::set<int> intset;
 
 template <class T, class C>
@@ -69,8 +71,19 @@ std::string table::make()
    // first, we'll determine all the rowspans and leftsides
    for (row=begin(); row!=end(); ++row)
    {
-      if ((*row)->CellDefs->size()!=(*row)->Cells.size())
-         throw std::logic_error("Number of Cells and number of CellDefs are unequal!");
+      if ((*row)->CellDefs->size()!=(*row)->Cells.size()) {
+            /* big deal. happens in WinHelp files */
+            fprintf(stderr,"WARNING: Number of Cells (%zu) and number of CellDefs (%zu) are unequal!\n",
+                (*row)->Cells.size(),(*row)->CellDefs->size());
+
+            /* make it equal, with padding. */
+            while ((*row)->CellDefs->size() < (*row)->Cells.size())
+                (*row)->CellDefs->push_back(new table_cell_def());
+
+            while ((*row)->Cells.size() < (*row)->CellDefs->size())
+                (*row)->Cells.push_back(new table_cell());
+      }
+
       for (cell_def=(*row)->CellDefs->begin(), cell=(*row)->Cells.begin(); 
            cell!=(*row)->Cells.end();
            ++cell, prev_cell_def=cell_def++

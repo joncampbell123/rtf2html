@@ -581,7 +581,7 @@ int main(int argc, char **argv)
       }
    }
    file_out<<"<html>\n<head>\n<STYLE type=\"text/css\">\nbody {padding-left:"
-           <<rint(iMarginLeft/20)<<"pt;width:"<<rint((iDocWidth/20))<<"pt}\n"
+           <<rint(iMarginLeft/20)<<"pt;width:"<<rint((iDocWidth/20))<<"pt;}\n"
            <<"p {margin-top:0pt;margin-bottom:0pt}\n"<<formatting_options::get_styles()<<"</STYLE>\n"
            <<"<title>"<<title<<"</title>\n</head>\n"
            <<"<body>\n"<<html<<"</body>\n</html>";

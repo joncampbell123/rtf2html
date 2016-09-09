@@ -119,6 +119,23 @@ std::string formatter::format(const formatting_options &_opt)
       }
       last_opt=opt_stack.empty()?formatting_options():opt_stack.back();
    }
+   if (!opt.chpHidden)
+   {
+      int cnt=0;
+      fo_deque::reverse_iterator i;
+      for (i=opt_stack.rbegin(); i!=opt_stack.rend(); ++i)
+      {         
+         if (!i->chpHidden)
+            break;
+         ++cnt;
+      }
+      while (cnt--)
+      {
+         result+="</span>";
+         opt_stack.pop_back();
+      }
+      last_opt=opt_stack.empty()?formatting_options():opt_stack.back();
+   }
    std::string style;
    if (opt.chpBold!=last_opt.chpBold)
    {

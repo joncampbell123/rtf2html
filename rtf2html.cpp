@@ -45,12 +45,167 @@
 #include "fmt_opts.h"
 #include <cstdlib>
 #include <stdexcept>
+#include <string.h>
+#include <stdint.h>
 #include <fstream>
 #include <iostream>
 #include <string>
 
 //#include "dbg_iter.h"
 
+enum {
+	UTF8ERR_INVALID=-1,
+	UTF8ERR_NO_ROOM=-2
+};
+
+#ifndef UNICODE_BOM
+#define UNICODE_BOM 0xFEFF
+#endif
+
+typedef char utf8_t;
+typedef uint16_t utf16_t;
+
+/* [doc] utf8_encode
+ *
+ * Encode unicode character 'code' as UTF-8 ASCII string
+ *
+ * Parameters:
+ *
+ *    p = pointer to a char* pointer where the output will be written.
+ *        on return the pointer will have been updated.
+ *
+ *    fence = first byte past the end of the buffer. the function will not
+ *            write the output and update the pointer if doing so would bring
+ *            it past this point, in order to prevent buffer overrun and
+ *            possible memory corruption issues
+ *
+ *    c = unicode character to encode
+ *
+ * Warning:
+ *
+ *    Remember that one encoded UTF-8 character can occupy anywhere between
+ *    1 to 4 bytes. Do not assume one byte = one char. Use the fence pointer
+ *    to prevent buffer overruns and to know when the buffer should be
+ *    emptied and refilled.
+ * 
+ */
+int utf8_encode(char **ptr,char *fence,uint32_t code) {
+	int uchar_size=1;
+	char *p = *ptr;
+
+	if (!p) return UTF8ERR_NO_ROOM;
+	if (code >= (uint32_t)0x80000000UL) return UTF8ERR_INVALID;
+	if (p >= fence) return UTF8ERR_NO_ROOM;
+
+	if (code >= 0x4000000) uchar_size = 6;
+	else if (code >= 0x200000) uchar_size = 5;
+	else if (code >= 0x10000) uchar_size = 4;
+	else if (code >= 0x800) uchar_size = 3;
+	else if (code >= 0x80) uchar_size = 2;
+
+	if ((p+uchar_size) > fence) return UTF8ERR_NO_ROOM;
+
+	switch (uchar_size) {
+		case 1:	*p++ = (char)code;
+			break;
+		case 2:	*p++ = (char)(0xC0 | (code >> 6));
+			*p++ = (char)(0x80 | (code & 0x3F));
+			break;
+		case 3:	*p++ = (char)(0xE0 | (code >> 12));
+			*p++ = (char)(0x80 | ((code >> 6) & 0x3F));
+			*p++ = (char)(0x80 | (code & 0x3F));
+			break;
+		case 4:	*p++ = (char)(0xF0 | (code >> 18));
+			*p++ = (char)(0x80 | ((code >> 12) & 0x3F));
+			*p++ = (char)(0x80 | ((code >> 6) & 0x3F));
+			*p++ = (char)(0x80 | (code & 0x3F));
+			break;
+		case 5:	*p++ = (char)(0xF8 | (code >> 24));
+			*p++ = (char)(0x80 | ((code >> 18) & 0x3F));
+			*p++ = (char)(0x80 | ((code >> 12) & 0x3F));
+			*p++ = (char)(0x80 | ((code >> 6) & 0x3F));
+			*p++ = (char)(0x80 | (code & 0x3F));
+			break;
+		case 6:	*p++ = (char)(0xFC | (code >> 30));
+			*p++ = (char)(0x80 | ((code >> 24) & 0x3F));
+			*p++ = (char)(0x80 | ((code >> 18) & 0x3F));
+			*p++ = (char)(0x80 | ((code >> 12) & 0x3F));
+			*p++ = (char)(0x80 | ((code >> 6) & 0x3F));
+			*p++ = (char)(0x80 | (code & 0x3F));
+			break;
+	};
+
+	*ptr = p;
+	return 0;
+}
+
+static std::string ansi2utf(char c,std::string &font) {
+    // the reason this is a function is so that later revisions of the code
+    // can support other legacy non-unicode encodings should the user run
+    // this program against non-latin-1 encodings.
+    //
+    // also, so that we can add command line switches later for purists who
+    // do NOT want us converting charsets.
+    if ((unsigned char)c < (unsigned char)0x80) {
+        std::string r;
+        r = c; // FIXME: there's no constructor for char?
+        return r;
+    }
+
+    {
+        char tmp[32]={0},*w=tmp,*f=tmp+sizeof(tmp)-1;
+
+        if (!strcasecmp(font.c_str(),"SYMBOL")) {
+            // Windows Symbol font to UTF-8 conversion.
+            // This isn't complete by far, but it's enough to convert the most commonly used ones in WinHelp files.
+            switch ((unsigned char)c) {
+                case 180: // Multiplication symbol
+                    utf8_encode(&w,f,0x00D7);
+                    break;
+                case 210: // Registered symbol
+                    utf8_encode(&w,f,0x00AE);
+                    break;
+                case 211: // Copyright symbol
+                    utf8_encode(&w,f,0x00A9);
+                    break;
+                case 212: // Trademark symbol
+                    utf8_encode(&w,f,0x2122);
+                    break;
+                default:
+                    fprintf(stderr,"FIXME: Windows Symbol font code 0x%02x not implemented\n",(unsigned char)c);
+                    break;
+            };
+        }
+        else {
+            // ANSI (Latin-1)
+            switch ((unsigned char)c) {
+                case 0x86: // dagger
+                    utf8_encode(&w,f,0x2020);
+                    break;
+                case 0x87: // double dagger
+                    utf8_encode(&w,f,0x2021);
+                    break;
+                case 0x93: // left double quotation mark
+                    utf8_encode(&w,f,0x201C);
+                    break;
+                case 0x94: // right double quotation mark
+                    utf8_encode(&w,f,0x201D);
+                    break;
+                case 0x96: // en dash
+                    utf8_encode(&w,f,0x2013);
+                    break;
+                case 0x97: // em dash
+                    utf8_encode(&w,f,0x2014);
+                    break;
+                default:
+                    fprintf(stderr,"FIXME: ANSI to UTF-8 for code 0x%02x not implemented\n",(unsigned char)c);
+                    break;
+            }
+        }
+    
+        return (const char*)tmp;
+    }
+}
 
 int main(int argc, char **argv)
 {
@@ -132,7 +287,7 @@ int main(int argc, char **argv)
                par_html.write(kw.control_char());
                break;
             case '\'':
-               par_html.write(char_by_code(buf_in));
+               par_html.write(ansi2utf(char_by_code_noesc(buf_in),cur_options.chpFont.name));
                break;
             case '*':
                bAsterisk=true;
@@ -178,7 +333,7 @@ int main(int argc, char **argv)
                      {
                         rtf_keyword kw(++buf_in);
                         if (in_title && kw.is_control_char() && kw.control_char() == '\'')
-                           title += char_by_code(buf_in);
+                           title += ansi2utf(char_by_code_noesc(buf_in),cur_options.chpFont.name);
                         else if (kw.keyword()==rtf_keyword::rkw_title)
                            in_title=true;
                         break;
@@ -577,10 +732,12 @@ int main(int argc, char **argv)
          ++buf_in;
          break;*/
       default:
-         par_html.write(*buf_in++);
+         par_html.write(ansi2utf(*buf_in++,cur_options.chpFont.name));
       }
    }
-   file_out<<"<html>\n<head>\n<STYLE type=\"text/css\">\nbody {padding-left:"
+   file_out<<"<html>\n<head>\n"
+           <<"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n"
+           <<"<STYLE type=\"text/css\">\nbody {padding-left:"
            <<rint(iMarginLeft/20)<<"pt;width:"<<rint((iDocWidth/20))<<"pt;}\n"
            <<"p {margin-top:0pt;margin-bottom:0pt}\n"<<formatting_options::get_styles()<<"</STYLE>\n"
            <<"<title>"<<title<<"</title>\n</head>\n"

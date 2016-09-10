@@ -1,3 +1,4 @@
+#include <string.h>
 #include "fmt_opts.h"
 
 strmap formatting_options::styles;
@@ -230,7 +231,14 @@ std::string formatter::format(const formatting_options &_opt)
    if (opt.chpFont!=last_opt.chpFont)
    {
       style+="font-family:'";
-      style+=opt.chpFont.name.empty()?"serif":opt.chpFont.name;
+
+      /* hack: convert Windows "Symbol" font on the fly, print it as if Times New Roman.
+       *       Else, the Copyright, Trademark, and Registered symbols in older WinHelp files do not display properly. */
+      if (!strcasecmp(opt.chpFont.name.c_str(),"symbol"))
+          style+="Times New Roman";
+      else
+          style+=opt.chpFont.name.empty()?"serif":opt.chpFont.name;
+
       style+="'";
       switch (opt.chpFont.family)
       {

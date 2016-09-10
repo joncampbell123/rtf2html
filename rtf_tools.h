@@ -67,4 +67,12 @@ std::string char_by_code(InputIter &iter)
    }
 }
 
+template <class InputIter>
+char char_by_code_noesc(InputIter &iter)
+{
+   std::string stmp(1, *iter++);
+   stmp += *iter++;
+   return std::strtol(stmp.c_str(), NULL, 16);
+}
+
 #endif

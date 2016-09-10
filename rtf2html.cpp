@@ -140,6 +140,13 @@ int utf8_encode(char **ptr,char *fence,uint32_t code) {
 }
 
 static std::string ansi2utf(char c,std::string &font) {
+    // hack: some WinHelp documents have sample code with spaces to indent them.
+    // if the font is Courier New, convert spaces to &nbsp; to prevent the browser from collapsing them.
+    if (c == ' ') {
+        if (!strcasecmp(font.c_str(),"courier") || !strcasecmp(font.c_str(),"courier new"))
+            return "&nbsp;";
+    }
+
     // the reason this is a function is so that later revisions of the code
     // can support other legacy non-unicode encodings should the user run
     // this program against non-latin-1 encodings.

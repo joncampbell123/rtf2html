@@ -204,6 +204,15 @@ static std::string ansi2utf(char c,std::string &font) {
                 case 0x97: // em dash
                     utf8_encode(&w,f,0x2014);
                     break;
+                case 0xA0: // NBSP
+                    utf8_encode(&w,f,0x00A0);
+                    break;
+                case 0xA9: // copyright
+                    utf8_encode(&w,f,0x00A9);
+                    break;
+                case 0xB7: // dot
+                    utf8_encode(&w,f,0x00B7);
+                    break;
                 default:
                     fprintf(stderr,"FIXME: ANSI to UTF-8 for code 0x%02x not implemented\n",(unsigned char)c);
                     break;
